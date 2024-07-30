@@ -106,6 +106,8 @@ dlg:button {
         local fmtIsRgba <const> = fmtIsRgba16
             or fmtIsRgba32
 
+        -- TODO: Instead of returning early, create an AseColor
+        -- then use the index function?
         if fmtIsIdx and cmIsRgb then
             app.alert {
                 title = "Error",
@@ -116,7 +118,7 @@ dlg:button {
 
         local spritePalettes <const> = activeSprite.palettes
         local lenSpritePalettes <const> = #spritePalettes
-        local palette <const> = activeFrIdx <= lenSpritePalettes
+        local palette <const> = (activeFrIdx <= lenSpritePalettes and cmIsIdx)
             and spritePalettes[activeFrIdx]
             or spritePalettes[1]
         local lenPalette <const> = #palette
@@ -353,6 +355,7 @@ dlg:button {
                     local y <const> = hn1 - yFlipped
                     local j <const> = y * wSprite + x
                     local abgr32 <const> = abgr32s[1 + j]
+
                     local channel <const> = xByte % 3
                     if channel == 2 then
                         value = abgr32 & 0xff
@@ -369,7 +372,45 @@ dlg:button {
             end
         elseif fmtIsRgb15 or fmtIsRgba16 then
             local bytesPerRow <const> = 4 * ceil((wSprite * 16) / 32)
-            -- TODO: Implement.
+            local hbpr <const> = hSprite * bytesPerRow
+            local from8to5 <const> = 31.0 / 255.0
+
+            local n = 0
+            while n < hbpr do
+                local xByte <const> = n % bytesPerRow
+                local yFlipped <const> = n // bytesPerRow
+                local x <const> = xByte // 2
+
+                local value = 0
+                if x < wSprite then
+                    local y <const> = hn1 - yFlipped
+                    local j <const> = y * wSprite + x
+                    local abgr32 <const> = abgr32s[1 + j]
+
+                    local a8 <const> = abgr32 >> 0x18 & 0xff
+                    local b8 <const> = abgr32 >> 0x10 & 0xff
+                    local g8 <const> = abgr32 >> 0x08 & 0xff
+                    local r8 <const> = abgr32 & 0xff
+
+                    local a1 <const> = a8 >= 128 and 1 or 0
+                    local r5 <const> = floor(0.5 + r8 * from8to5)
+                    local g5 <const> = floor(0.5 + g8 * from8to5)
+                    local b5 <const> = floor(0.5 + b8 * from8to5)
+
+                    local rgb555 <const> = a1 << 0xf | r5 << 0xa | g5 << 0x5 | b5
+
+                    local channel <const> = xByte % 2
+                    if channel == 1 then
+                        value = (rgb555 >> 0x08) & 0xff
+                    else
+                        value = rgb555 & 0xff
+                    end
+                end
+
+                trgStrArr[1 + n] = strchar(value)
+
+                n = n + 1
+            end
         elseif fmtIsIdx8 then
             -- TODO: Implement.
         elseif fmtIsIdx4 then
