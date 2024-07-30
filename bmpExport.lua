@@ -9,7 +9,6 @@ local formatOptions <const> = {
 }
 
 local defaults <const> = {
-    -- Krita opens both this RGBA16 and Gimp RGBA16 as translucent.
     -- TODO: Look into difference between RGBA16 and RGBX16. (initial guess
     -- is that it's a double high bmp like those in an ico.)
     formatOption = "RGB24"
@@ -109,16 +108,6 @@ dlg:button {
         local fmtIsRgba <const> = fmtIsRgba16
             or fmtIsRgba32
 
-        -- TODO: Instead of returning early, create an AseColor
-        -- then use the index function?
-        if fmtIsIdx and cmIsRgb then
-            app.alert {
-                title = "Error",
-                text = "Sprite is not in indexed color mode."
-            }
-            return
-        end
-
         local spritePalettes <const> = activeSprite.palettes
         local lenSpritePalettes <const> = #spritePalettes
         local palette <const> = (activeFrIdx <= lenSpritePalettes and cmIsIdx)
@@ -160,16 +149,31 @@ dlg:button {
         local idcs <const> = {}
 
         if cmIsRgb then
-            local h = 0
-            while h < areaSprite do
-                local h4 <const> = h * 4
-                local r8 <const>,
-                g8 <const>,
-                b8 <const>,
-                a8 <const> = strbyte(flatBytes, 1 + h4, 4 + h4)
-                local abgr32 <const> = a8 << 0x18 | b8 << 0x10 | g8 << 0x08 | r8
-                abgr32s[1 + h] = abgr32
-                h = h + 1
+            if fmtIsIdx then
+                local h = 0
+                while h < areaSprite do
+                    local h4 <const> = h * 4
+                    local r8 <const>,
+                    g8 <const>,
+                    b8 <const>,
+                    a8 <const> = strbyte(flatBytes, 1 + h4, 4 + h4)
+                    local aseColor <const> = Color { r = r8, g = g8, b = b8, a = a8 }
+                    local idx <const> = aseColor.index
+                    idcs[1 + h] = idx
+                    h = h + 1
+                end
+            else
+                local h = 0
+                while h < areaSprite do
+                    local h4 <const> = h * 4
+                    local r8 <const>,
+                    g8 <const>,
+                    b8 <const>,
+                    a8 <const> = strbyte(flatBytes, 1 + h4, 4 + h4)
+                    local abgr32 <const> = a8 << 0x18 | b8 << 0x10 | g8 << 0x08 | r8
+                    abgr32s[1 + h] = abgr32
+                    h = h + 1
+                end
             end
         elseif cmIsGry then
             if fmtIsIdx8 then
@@ -435,8 +439,6 @@ dlg:button {
 
                 n = n + 1
             end
-
-            -- TODO: Implement.
         elseif fmtIsIdx4 then
             -- TODO: Implement.
         elseif fmtIsIdx2 then
@@ -483,7 +485,7 @@ dlg:button {
             local aMask = 0xff000000
 
             if fmtIsRgba16 then
-                -- TODO: Requires testing.
+                -- Krita opens both this RGBA16 and Gimp RGBA16 as translucent.
 
                 rMask = 0x7c00 -- 0x1f << 0xa
                 gMask = 0x03e0 -- 0x1f << 0x5
