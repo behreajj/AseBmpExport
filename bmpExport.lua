@@ -141,7 +141,6 @@ dlg:button {
         local strbyte <const> = string.byte
         local strpack <const> = string.pack
         local strchar <const> = string.char
-        local strsub <const> = string.sub
 
         ---@type integer[]
         local abgr32s <const> = {}
@@ -439,7 +438,51 @@ dlg:button {
                 n = n + 1
             end
         elseif fmtIsIdx4 then
-            -- TODO: Implement.
+            -- TODO: Any way this can be a more efficient 1D loop?
+
+            local bytesPerRow <const> = 4 * ceil((wSprite * 4) / 32)
+            local zeroChar <const> = strchar(0)
+
+            local y = hSprite - 1
+            while y >= 0 do
+                ---@type string[]
+                local rowStr <const> = {}
+
+                local x = 0
+                while x < wSprite do
+                    local i0 <const> = y * wSprite + x
+                    local idx0 <const> = idcs[1 + i0]
+                    local idxVerif0 <const> = idx0 < lenPalClamped
+                        and idx0
+                        or alphaIdxVerif
+
+                    local i1 <const> = y * wSprite + x + 1
+                    local idx1 <const> = (x + 1) < wSprite
+                        and idcs[1 + i1]
+                        or 0
+                    local idxVerif1 <const> = idx1 < lenPalClamped
+                        and idx1
+                        or alphaIdxVerif
+
+                    local comp = idxVerif0 << 4 | idxVerif1
+                    rowStr[#rowStr + 1] = strchar(comp)
+
+                    x = x + 2
+                end
+
+                while #rowStr < bytesPerRow do
+                    rowStr[#rowStr + 1] = zeroChar
+                end
+
+                local lenRowStr <const> = #rowStr
+                local n = 0
+                while n < lenRowStr do
+                    n = n + 1
+                    trgStrArr[#trgStrArr + 1] = rowStr[n]
+                end
+
+                y = y - 1
+            end
         elseif fmtIsIdx2 then
             -- TODO: Implement.
         elseif fmtIsIdx1 then
