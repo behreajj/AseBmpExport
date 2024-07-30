@@ -14,7 +14,7 @@ local defaults <const> = {
     formatOption = "RGB24"
 }
 
-local dlg <const> = Dialog { title = "Export BMP 2" }
+local dlg <const> = Dialog { title = "Export BMP" }
 
 dlg:combobox {
     id = "formatOption",
