@@ -155,10 +155,11 @@ dlg:button {
                     local h4 <const> = h * 4
                     local r8 <const>,
                     g8 <const>,
-                    b8 <const> = strbyte(flatBytes, 1 + h4, 3 + h4)
+                    b8 <const>,
+                    a8 <const> = strbyte(flatBytes, 1 + h4, 4 + h4)
                     local aseColor <const> = Color { r = r8, g = g8, b = b8, a = 255 }
                     local idx <const> = aseColor.index
-                    local idxVerif <const> = idx < lenPalClamped
+                    local idxVerif <const> = (a8 > 0 and idx < lenPalClamped)
                         and idx
                         or alphaIdxVerif
                     idcs[1 + h] = idxVerif
