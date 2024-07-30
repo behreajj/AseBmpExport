@@ -9,6 +9,9 @@ local formatOptions <const> = {
 }
 
 local defaults <const> = {
+    -- Krita opens both this RGBA16 and Gimp RGBA16 as translucent.
+    -- TODO: Look into difference between RGBA16 and RGBX16. (initial guess
+    -- is that it's a double high bmp like those in an ico.)
     formatOption = "RGB24"
 }
 
@@ -169,43 +172,41 @@ dlg:button {
                 h = h + 1
             end
         elseif cmIsGry then
-            if fmtIsIdx then
-                if fmtIsIdx8 then
-                    local h = 0
-                    while h < areaSprite do
-                        local h2 <const> = h * 2
-                        local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
-                        idcs[1 + h] = v8
-                        h = h + 1
-                    end
-                elseif fmtIsIdx4 then
-                    local convert <const> = 15.0 / 255.0
+            if fmtIsIdx8 then
+                local h = 0
+                while h < areaSprite do
+                    local h2 <const> = h * 2
+                    local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
+                    idcs[1 + h] = v8
+                    h = h + 1
+                end
+            elseif fmtIsIdx4 then
+                local convert <const> = 15.0 / 255.0
 
-                    local h = 0
-                    while h < areaSprite do
-                        local h2 <const> = h * 2
-                        local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
-                        idcs[1 + h] = floor(v8 * convert + 0.5)
-                        h = h + 1
-                    end
-                elseif fmtIsIdx2 then
-                    local convert <const> = 3.0 / 255.0
+                local h = 0
+                while h < areaSprite do
+                    local h2 <const> = h * 2
+                    local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
+                    idcs[1 + h] = floor(v8 * convert + 0.5)
+                    h = h + 1
+                end
+            elseif fmtIsIdx2 then
+                local convert <const> = 3.0 / 255.0
 
-                    local h = 0
-                    while h < areaSprite do
-                        local h2 <const> = h * 2
-                        local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
-                        idcs[1 + h] = floor(v8 * convert + 0.5)
-                        h = h + 1
-                    end
-                elseif fmtIsIdx1 then
-                    local h = 0
-                    while h < areaSprite do
-                        local h2 <const> = h * 2
-                        local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
-                        idcs[1 + h] = v8 >= 128 and 1 or 0
-                        h = h + 1
-                    end
+                local h = 0
+                while h < areaSprite do
+                    local h2 <const> = h * 2
+                    local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
+                    idcs[1 + h] = floor(v8 * convert + 0.5)
+                    h = h + 1
+                end
+            elseif fmtIsIdx1 then
+                local h = 0
+                while h < areaSprite do
+                    local h2 <const> = h * 2
+                    local v8 <const>, _ <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
+                    idcs[1 + h] = v8 >= 128 and 1 or 0
+                    h = h + 1
                 end
             else
                 local h = 0
@@ -267,7 +268,7 @@ dlg:button {
         if fmtIsIdx then
             ---@type string[]
             local palStrArr <const> = {}
-            local charZero <const> = strchar(0)
+            local zeroChar <const> = strchar(0)
 
             if cmIsGry then
                 local toFac <const> = lenWritePal > 0
@@ -283,7 +284,7 @@ dlg:button {
                     palStrArr[1 + i4] = v8Char
                     palStrArr[2 + i4] = v8Char
                     palStrArr[3 + i4] = v8Char
-                    palStrArr[4 + i4] = charZero
+                    palStrArr[4 + i4] = zeroChar
 
                     i = i + 1
                 end
@@ -299,17 +300,17 @@ dlg:button {
                     palStrArr[1 + i4] = strchar(b8)
                     palStrArr[2 + i4] = strchar(g8)
                     palStrArr[3 + i4] = strchar(r8)
-                    palStrArr[4 + i4] = charZero
+                    palStrArr[4 + i4] = zeroChar
 
                     i = i + 1
                 end
 
                 -- Pad shorter palettes to fit write length.
                 while i < lenWritePal do
-                    palStrArr[#palStrArr + 1] = charZero
-                    palStrArr[#palStrArr + 1] = charZero
-                    palStrArr[#palStrArr + 1] = charZero
-                    palStrArr[#palStrArr + 1] = charZero
+                    palStrArr[#palStrArr + 1] = zeroChar
+                    palStrArr[#palStrArr + 1] = zeroChar
+                    palStrArr[#palStrArr + 1] = zeroChar
+                    palStrArr[#palStrArr + 1] = zeroChar
                     i = i + 1
                 end
             end
@@ -412,6 +413,29 @@ dlg:button {
                 n = n + 1
             end
         elseif fmtIsIdx8 then
+            local bytesPerRow <const> = 4 * ceil((wSprite * 8) / 32)
+            local hbpr <const> = hSprite * bytesPerRow
+
+            local n = 0
+            while n < hbpr do
+                local x <const> = n % bytesPerRow
+                local yFlipped <const> = n // bytesPerRow
+
+                local idxVerif = 0
+                if x < wSprite then
+                    local y <const> = hn1 - yFlipped
+                    local j <const> = y * wSprite + x
+                    local idx <const> = idcs[1 + j]
+                    idxVerif = idx < lenPalClamped
+                        and idx
+                        or alphaIdxVerif
+                end
+
+                trgStrArr[1 + n] = strchar(idxVerif)
+
+                n = n + 1
+            end
+
             -- TODO: Implement.
         elseif fmtIsIdx4 then
             -- TODO: Implement.
