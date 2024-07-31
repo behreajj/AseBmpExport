@@ -11,8 +11,66 @@ local formatOptions <const> = {
 local defaults <const> = {
     -- TODO: Look into difference between RGBA16 and RGBX16. (initial guess
     -- is that it's a double high bmp like those in an ico.)
-    formatOption = "RGB24"
+    -- TODO: Option to export multiple bmps at once?
+    -- TODO: Option to apply pixel aspect ratio?
+    formatOption = "RGB24",
+    upscale = 1,
 }
+
+---@param source Image
+---@param wScale integer
+---@param hScale integer
+---@return Image
+---@nodiscard
+local function upscaleImageForExport(source, wScale, hScale)
+    local wScaleVrf <const> = math.max(1, math.abs(wScale))
+    local hScaleVrf <const> = math.max(1, math.abs(hScale))
+    if wScaleVrf == 1 and hScaleVrf == 1 then
+        return source
+    end
+
+    local srcByteStr <const> = source.bytes
+    local bpp <const> = source.bytesPerPixel
+    local srcSpec <const> = source.spec
+    local wSrc <const> = srcSpec.width
+    local hSrc <const> = srcSpec.height
+
+    ---@type string[]
+    local resized <const> = {}
+    local lenKernel <const> = wScaleVrf * hScaleVrf
+    local lenSrc <const> = wSrc * hSrc
+    local wTrg <const> = wSrc * wScaleVrf
+    local hTrg <const> = hSrc * hScaleVrf
+
+    local trgSpec <const> = ImageSpec {
+        width = wTrg,
+        height = hTrg,
+        colorMode = srcSpec.colorMode,
+        transparentColor = srcSpec.transparentColor
+    }
+    trgSpec.colorSpace = srcSpec.colorSpace
+    local target <const> = Image(trgSpec)
+
+    local strsub <const> = string.sub
+    local i = 0
+    while i < lenSrc do
+        local xTrg <const> = wScaleVrf * (i % wSrc)
+        local yTrg <const> = hScaleVrf * (i // wSrc)
+        local ibpp <const> = i * bpp
+        local srcStr <const> = strsub(srcByteStr, 1 + ibpp, bpp + ibpp)
+        local j = 0
+        while j < lenKernel do
+            local xKernel <const> = xTrg + j % wScaleVrf
+            local yKernel <const> = yTrg + j // wScaleVrf
+            resized[1 + yKernel * wTrg + xKernel] = srcStr
+            j = j + 1
+        end
+        i = i + 1
+    end
+
+    target.bytes = table.concat(resized)
+    return target
+end
 
 local dlg <const> = Dialog { title = "Export BMP" }
 
@@ -21,6 +79,17 @@ dlg:combobox {
     label = "Format:",
     option = defaults.formatOption,
     options = formatOptions,
+    focus = false,
+}
+
+dlg:newrow { always = false }
+
+dlg:slider {
+    id = "upscale",
+    label = "Scale:",
+    value = defaults.upscale,
+    min = 1,
+    max = 10,
     focus = false,
 }
 
@@ -73,8 +142,6 @@ dlg:button {
 
         -- Unpack sprite.
         local spriteSpec <const> = activeSprite.spec
-        local wSprite <const> = spriteSpec.width
-        local hSprite <const> = spriteSpec.height
         local colorMode <const> = spriteSpec.colorMode
         local alphaIdx <const> = spriteSpec.transparentColor
 
@@ -131,9 +198,16 @@ dlg:button {
             and alphaIdx
             or 0
 
-        local flatImage <const> = Image(spriteSpec)
+        local upscale <const> = args.upscale
+            or defaults.upscale --[[@as integer]]
+
+        local flatImage = Image(spriteSpec)
         flatImage:drawSprite(activeSprite, activeFrIdx)
+        flatImage = upscaleImageForExport(flatImage, upscale, upscale)
         local flatBytes <const> = flatImage.bytes
+
+        local wSprite <const> = spriteSpec.width * upscale
+        local hSprite <const> = spriteSpec.height * upscale
         local areaSprite <const> = wSprite * hSprite
 
         local floor <const> = math.floor
@@ -396,9 +470,9 @@ dlg:button {
                     local r8 <const> = abgr32 & 0xff
 
                     local a1 <const> = a8 >= 128 and 1 or 0
-                    local r5 <const> = floor(0.5 + r8 * from8to5)
-                    local g5 <const> = floor(0.5 + g8 * from8to5)
-                    local b5 <const> = floor(0.5 + b8 * from8to5)
+                    local r5 <const> = floor(r8 * from8to5 + 0.5)
+                    local g5 <const> = floor(g8 * from8to5 + 0.5)
+                    local b5 <const> = floor(b8 * from8to5 + 0.5)
 
                     local rgb555 <const> = a1 << 0xf | r5 << 0xa | g5 << 0x5 | b5
 
