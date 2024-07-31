@@ -4,7 +4,7 @@
 
 This an [Aseprite](https://www.aseprite.org/) script to export `bmp`s in a variety of formats. Aseprite supports `bmp` export natively, but does not give the user direct control over the data format. This leads to problems where other graphics editors have issues opening Aseprite generated files.
 
-This script uses the [BITMAPINFOHEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader) for indexed 4 and 8 formats and RGB 15, 24 and 32 formats. It uses the [BITMAPV4HEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header) for RGBA 16 and 32 formats. Exported files do not use any compression. Color profile information is not written to the file, even when the `BITMAPV4HEADER` is used, as the data cannot be accessed by Aseprite's Lua scripting API. For that reason, the sRGB color space should be assumed.
+This script uses the [BITMAPINFOHEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader) for indexed 4 and 8 formats and RGB 15, 24 and 32 formats. It uses the [BITMAPV4HEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header) for RGB 16 (565), RGBA 16 (551) and RGBA 32 formats. Exported files do not use any compression. Color profile information is not written to the file, even when the `BITMAPV4HEADER` is used, as the data cannot be accessed by Aseprite's Lua scripting API. For that reason, the sRGB color space should be assumed.
 
 Sample export files can be found in the samples folder if you'd like to test compatibility before using the script.
 
