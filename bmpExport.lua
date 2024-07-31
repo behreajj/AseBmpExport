@@ -12,9 +12,9 @@ local defaults <const> = {
     -- TODO: Look into difference between RGBA16 and RGBX16. (initial guess
     -- is that it's a double high bmp like those in an ico.)
     -- TODO: Option to export multiple bmps at once?
-    -- TODO: Option to apply pixel aspect ratio?
     formatOption = "RGB24",
     upscale = 1,
+    applyRatio = false,
 }
 
 ---@param source Image
@@ -90,6 +90,16 @@ dlg:slider {
     value = defaults.upscale,
     min = 1,
     max = 10,
+    focus = false,
+}
+
+dlg:newrow { always = false }
+
+dlg:check {
+    id = "applyRatio",
+    label = "Apply:",
+    text = "Pixel Ratio",
+    selected = defaults.applyRatio,
     focus = false,
 }
 
@@ -200,14 +210,23 @@ dlg:button {
 
         local upscale <const> = args.upscale
             or defaults.upscale --[[@as integer]]
+        local applyRatio <const> = args.applyRatio --[[@as boolean]]
+
+        local pxRatio <const> = activeSprite.pixelRatio
+        local wPixel <const> = applyRatio
+            and math.max(1, math.abs(pxRatio.width)) or 1
+        local hPixel <const> = applyRatio
+            and math.max(1, math.abs(pxRatio.height)) or 1
+        local wScalar <const> = wPixel * upscale
+        local hScalar <const> = hPixel * upscale
 
         local flatImage = Image(spriteSpec)
         flatImage:drawSprite(activeSprite, activeFrIdx)
-        flatImage = upscaleImageForExport(flatImage, upscale, upscale)
+        flatImage = upscaleImageForExport(flatImage, wScalar, hScalar)
         local flatBytes <const> = flatImage.bytes
 
-        local wSprite <const> = spriteSpec.width * upscale
-        local hSprite <const> = spriteSpec.height * upscale
+        local wSprite <const> = spriteSpec.width * wScalar
+        local hSprite <const> = spriteSpec.height * hScalar
         local areaSprite <const> = wSprite * hSprite
 
         local floor <const> = math.floor
