@@ -633,8 +633,8 @@ dlg:button {
             dibLen = 108
             headerLen = 122
         end
-        local dataLen = headerLen + #trgStr
-        local dataOffset = headerLen + #palStr
+        local dataLen <const> = headerLen + #trgStr + #palStr
+        local dataOffset <const> = headerLen + #palStr
 
         local bpp = 32
         if fmtIsRgb32 or fmtIsRgba32 then
