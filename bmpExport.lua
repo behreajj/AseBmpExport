@@ -1,11 +1,12 @@
 local formatOptions <const> = {
     "IDX4",
     "IDX8",
-    "RGB15",
-    "RGB24",
-    "RGB32",
-    "RGBA16",
-    "RGBA32",
+    "RGB15",  -- RGB_5550
+    "RGB16",  -- RGB565
+    "RGB24",  -- RGB888
+    "RGB32",  -- RGB_8880
+    "RGBA16", -- RGBA5551
+    "RGBA32", -- RGBA8888
 }
 
 local defaults <const> = {
@@ -177,13 +178,15 @@ dlg:button {
             or fmtIsIdx8
 
         local fmtIsRgb15 <const> = formatOption == "RGB15"
+        local fmtIsRgb16 <const> = formatOption == "RGB16"
         local fmtIsRgb24 <const> = formatOption == "RGB24"
         local fmtIsRgb32 <const> = formatOption == "RGB32"
-
         local fmtIsRgba16 <const> = formatOption == "RGBA16"
         local fmtIsRgba32 <const> = formatOption == "RGBA32"
-        local fmtIsRgba <const> = fmtIsRgba16
-            or fmtIsRgba32
+
+        local writeV4Header <const> = fmtIsRgba32
+            or fmtIsRgba16
+            or fmtIsRgb16
 
         local spritePalettes <const> = activeSprite.palettes
         local lenSpritePalettes <const> = #spritePalettes
@@ -466,6 +469,46 @@ dlg:button {
 
                 n = n + 1
             end
+        elseif fmtIsRgb16 then
+            local bytesPerRow <const> = 4 * ceil((wSprite * 16) / 32)
+            local hbpr <const> = hSprite * bytesPerRow
+            local from8to5 <const> = 31.0 / 255.0
+            local from8to6 <const> = 63.0 / 255.0
+
+            local n = 0
+            while n < hbpr do
+                local xByte <const> = n % bytesPerRow
+                local yFlipped <const> = n // bytesPerRow
+                local x <const> = xByte // 2
+
+                local value = 0
+                if x < wSprite then
+                    local y <const> = hn1 - yFlipped
+                    local j <const> = y * wSprite + x
+                    local abgr32 <const> = abgr32s[1 + j]
+
+                    local b8 <const> = abgr32 >> 0x10 & 0xff
+                    local g8 <const> = abgr32 >> 0x08 & 0xff
+                    local r8 <const> = abgr32 & 0xff
+
+                    local r5 <const> = floor(r8 * from8to5 + 0.5)
+                    local g6 <const> = floor(g8 * from8to6 + 0.5)
+                    local b5 <const> = floor(b8 * from8to5 + 0.5)
+
+                    local rgb565 <const> = r5 << 0xb | g6 << 0x5 | b5
+
+                    local channel <const> = xByte % 2
+                    if channel == 1 then
+                        value = (rgb565 >> 0x08) & 0xff
+                    else
+                        value = rgb565 & 0xff
+                    end
+                end
+
+                trgStrArr[1 + n] = strchar(value)
+
+                n = n + 1
+            end
         elseif fmtIsRgb15 or fmtIsRgba16 then
             local bytesPerRow <const> = 4 * ceil((wSprite * 16) / 32)
             local hbpr <const> = hSprite * bytesPerRow
@@ -585,7 +628,7 @@ dlg:button {
 
         local dibLen = 40
         local headerLen = 54
-        if fmtIsRgba then
+        if writeV4Header then
             -- V4
             dibLen = 108
             headerLen = 122
@@ -598,7 +641,9 @@ dlg:button {
             bpp = 32
         elseif fmtIsRgb24 then
             bpp = 24
-        elseif fmtIsRgb15 or fmtIsRgba16 then
+        elseif fmtIsRgb15
+            or fmtIsRgb16
+            or fmtIsRgba16 then
             bpp = 16
         elseif fmtIsIdx8 then
             bpp = 8
@@ -611,7 +656,7 @@ dlg:button {
         end
 
         local header = ""
-        if fmtIsRgba then
+        if writeV4Header then
             -- https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header
 
             local rMask = 0x00ff0000
@@ -619,7 +664,12 @@ dlg:button {
             local bMask = 0x000000ff
             local aMask = 0xff000000
 
-            if fmtIsRgba16 then
+            if fmtIsRgb16 then
+                rMask = 0xf800 -- 0x1f << 0xb
+                gMask = 0x07e0 -- 0x3f << 0x5
+                bMask = 0x001f -- 0x1f << 0x0
+                aMask = 0x0000
+            elseif fmtIsRgba16 then
                 -- Krita opens both this RGBA16 and Gimp RGBA16 as translucent.
 
                 rMask = 0x7c00 -- 0x1f << 0xa
