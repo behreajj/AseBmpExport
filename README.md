@@ -26,6 +26,25 @@ A hot key can be assigned to a script by going to `Edit > Keyboard Shortcuts`. T
 
 Once open, holding down the `Alt` or `Option` key and pressing the underlined letter on a button will activate that button via keypress. For example, `Alt+C` will cancel the dialog.
 
+## Compatibility
+
+Below are known compatibility issues with exported gifs and other software.
+
+|Software|IDX4|IDX8|RGB15|RGB16|RGB24|RGB32|RGBA16|RGBA32|
+|--------|:--:|:--:|:---:|:---:|:---:|:---:|:----:|:----:|
+|Aseprite|✔️|✔️|❕|✔️|✔️|❕|✔️|✔️|
+|GIMP|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|
+|Godot|❌|✔️|❕|✔️|✔️|❕|✔️|✔️|
+|Irfanview|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|
+|Krita|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|MS Paint|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|Paint.Net|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|Unity|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
+|Visual Studio|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|XnView MP|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
+
+The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, this is where the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 16 and 32 bit RGB(A).
+
 ## Modification
 
 If you would like to modify this script, Aseprite's scripting API documentation can be found [here](https://aseprite.org/api/). If you use [Visual Studio Code](https://code.visualstudio.com/), I recommend the [Lua Language Server](https://github.com/LuaLS/lua-language-server) extension along with an [Aseprite type definition](https://github.com/behreajj/aseprite-type-definition).
