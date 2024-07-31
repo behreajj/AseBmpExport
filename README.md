@@ -43,7 +43,7 @@ Below are known compatibility issues with exported gifs and other software.
 |Visual Studio|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
 |XnView MP|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
 
-The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, this is where the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 16 and 32 bit RGB(A).
+The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, this is where the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 15 and 32 bit RGB.
 
 ## Modification
 
