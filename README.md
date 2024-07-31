@@ -28,7 +28,7 @@ Once open, holding down the `Alt` or `Option` key and pressing the underlined le
 
 ## Compatibility
 
-Below are known compatibility issues with exported gifs and other software.
+Below are known compatibility issues with exported bmps and other software.
 
 |Software|IDX4|IDX8|RGB15|RGB16|RGB24|RGB32|RGBA16|RGBA32|
 |--------|:--:|:--:|:---:|:---:|:---:|:---:|:----:|:----:|
