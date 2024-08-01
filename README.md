@@ -28,10 +28,10 @@ Once open, holding down the `Alt` or `Option` key and pressing the underlined le
 
 ## Compatibility
 
-Below are known compatibility issues with exported bmps and other software.
+Below are known compatibility issues with exported `bmp`s and other software.
 
 |Software|IDX4|IDX8|RGB15|RGB16|RGB24|RGB32|RGBA16|RGBA32|
-|--------|:--:|:--:|:---:|:---:|:---:|:---:|:----:|:----:|
+|-------:|:--:|:--:|:---:|:---:|:---:|:---:|:----:|:----:|
 |Aseprite|✔️|✔️|❕|✔️|✔️|❕|✔️|✔️|
 |GIMP|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|
 |Godot|❌|✔️|❕|✔️|✔️|❕|✔️|✔️|
@@ -43,7 +43,9 @@ Below are known compatibility issues with exported bmps and other software.
 |Visual Studio|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
 |XnView MP|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
 
-The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, this is where the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 15 and 32 bit RGB.
+The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 15 and 32 bit RGB.
+
+In Unity, transparency must be turned on in texture import settings. The results above assume it is on.
 
 ## Modification
 

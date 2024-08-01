@@ -10,8 +10,6 @@ local formatOptions <const> = {
 }
 
 local defaults <const> = {
-    -- TODO: Look into difference between RGBA16 and RGBX16. (initial guess
-    -- is that it's a double high bmp like those in an ico.)
     -- TODO: Option to export multiple bmps at once?
     formatOption = "RGB24",
     upscale = 1,
