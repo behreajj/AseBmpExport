@@ -404,20 +404,39 @@ dlg:button {
 
             if cmIsRgb then
                 if fmtIsIdx then
-                    local h = 0
-                    while h < areaSprite do
-                        local h4 <const> = h * 4
-                        local r8 <const>,
-                        g8 <const>,
-                        b8 <const>,
-                        a8 <const> = strbyte(flatBytes, 1 + h4, 4 + h4)
-                        local aseColor <const> = Color { r = r8, g = g8, b = b8, a = 255 }
-                        local idx <const> = aseColor.index
-                        local idxVerif <const> = (a8 > 0 and idx < lenPalClamped)
-                            and idx
-                            or alphaIdxVerif
-                        idcs[1 + h] = idxVerif
-                        h = h + 1
+                    if fmtIsIdx1 then
+                        local h = 0
+                        while h < areaSprite do
+                            local h4 <const> = h * 4
+                            local r8 <const>,
+                            g8 <const>,
+                            b8 <const>,
+                            a8 <const> = strbyte(flatBytes, 1 + h4, 4 + h4)
+
+                            local idxVerif = 0
+                            if a8 >= 128 then
+                                local v8 <const> = (r8 * 30 + g8 * 59 + b8 * 11) // 100
+                                idxVerif = v8 >= 128 and 1 or 0
+                            end
+                            idcs[1 + h] = idxVerif
+                            h = h + 1
+                        end
+                    else
+                        local h = 0
+                        while h < areaSprite do
+                            local h4 <const> = h * 4
+                            local r8 <const>,
+                            g8 <const>,
+                            b8 <const>,
+                            a8 <const> = strbyte(flatBytes, 1 + h4, 4 + h4)
+                            local aseColor <const> = Color { r = r8, g = g8, b = b8, a = 255 }
+                            local idx <const> = aseColor.index
+                            local idxVerif <const> = (a8 > 0 and idx < lenPalClamped)
+                                and idx
+                                or alphaIdxVerif
+                            idcs[1 + h] = idxVerif
+                            h = h + 1
+                        end
                     end
                 else
                     local h = 0
