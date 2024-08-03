@@ -604,11 +604,11 @@ dlg:button {
                 local n = 0
                 while n < hbpr do
                     local xByte <const> = n % bytesPerRow
-                    local yFlipped <const> = n // bytesPerRow
                     local x <const> = xByte // 3
 
                     local value = 0
                     if x < wSprite then
+                        local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
                         local j <const> = y * wSprite + x
                         local abgr32 <const> = abgr32s[1 + j]
@@ -634,11 +634,11 @@ dlg:button {
                 local n = 0
                 while n < hbpr do
                     local xByte <const> = n % bytesPerRow
-                    local yFlipped <const> = n // bytesPerRow
                     local x <const> = xByte // 2
 
                     local value = 0
                     if x < wSprite then
+                        local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
                         local j <const> = y * wSprite + x
                         local abgr32 <const> = abgr32s[1 + j]
@@ -672,11 +672,11 @@ dlg:button {
                 local n = 0
                 while n < hbpr do
                     local xByte <const> = n % bytesPerRow
-                    local yFlipped <const> = n // bytesPerRow
                     local x <const> = xByte // 2
 
                     local value = 0
                     if x < wSprite then
+                        local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
                         local j <const> = y * wSprite + x
                         local abgr32 <const> = abgr32s[1 + j]
@@ -712,10 +712,10 @@ dlg:button {
                 local n = 0
                 while n < hbpr do
                     local x <const> = n % bytesPerRow
-                    local yFlipped <const> = n // bytesPerRow
 
                     local idxVerif = 0
                     if x < wSprite then
+                        local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
                         local j <const> = y * wSprite + x
                         local idx <const> = idcs[1 + j]
