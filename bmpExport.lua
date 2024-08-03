@@ -1,4 +1,5 @@
 local formatOptions <const> = {
+    "IDX1",
     "IDX4",
     "IDX8",
     "RGB15",  -- RGB_5550
@@ -776,7 +777,38 @@ dlg:button {
             elseif fmtIsIdx2 then
                 -- TODO: Implement.
             elseif fmtIsIdx1 then
-                -- TODO: Implement.
+                ---@type integer[]
+                local dWords <const> = {}
+                local dWordsPerRow <const> = ceil(wSprite / 32)
+
+                local j = 0
+                while j < areaSprite do
+                    local x <const> = j % wSprite
+                    local y <const> = j // wSprite
+
+                    local yFlipped <const> = hSprite - 1 - y
+                    local n <const> = yFlipped * wSprite + x
+
+                    local idx = idcs[1 + n]
+                    local idxVerif <const> = idx < lenPalClamped
+                        and idx
+                        or alphaIdxVerif
+
+                    local xDWord <const> = x // 32
+                    local xBit <const> = 31 - x % 32
+                    local idxDWord <const> = y * dWordsPerRow + xDWord
+                    local dWord <const> = dWords[1 + idxDWord] or 0
+                    dWords[1 + idxDWord] = dWord | (idxVerif << xBit)
+
+                    j = j + 1
+                end
+
+                local lenDWords <const> = #dWords
+                local k = 0
+                while k < lenDWords do
+                    k = k + 1
+                    trgStrArr[k] = strpack(">I4", dWords[k])
+                end
             end
 
             local trgStr <const> = tconcat(trgStrArr)
@@ -789,24 +821,24 @@ dlg:button {
 
                 header = tconcat({
                     strpack("<I4", dataLen),    -- 006
-                    zeroi4,                    -- 010
+                    zeroi4,                     -- 010
                     strpack("<I4", dataOffset), -- 014
                     strpack("<I4", dibLen),     -- 018
-                    wSpritePacked,             -- 022
-                    hSpritePacked,             -- 026
-                    planesPacked,              -- 030 bit planes
-                    bppPacked,                 -- 032 bits per pixel
-                    compressPacked,            -- 034 compression
-                    zeroi4,                    -- 038 size of compressed image
-                    zeroi4,                    -- 042 x res
-                    zeroi4,                    -- 046 y res
-                    zeroi4,                    -- 050 colors used
-                    zeroi4,                    -- 054 important colors
+                    wSpritePacked,              -- 022
+                    hSpritePacked,              -- 026
+                    planesPacked,               -- 030 bit planes
+                    bppPacked,                  -- 032 bits per pixel
+                    compressPacked,             -- 034 compression
+                    zeroi4,                     -- 038 size of compressed image
+                    zeroi4,                     -- 042 x res
+                    zeroi4,                     -- 046 y res
+                    zeroi4,                     -- 050 colors used
+                    zeroi4,                     -- 054 important colors
 
-                    rMaskPacked,               -- 058 red bit mask
-                    gMaskPacked,               -- 062 green bit mask
-                    bMaskPacked,               -- 066 blue bit mask
-                    aMaskPacked,               -- 070 alpha bit mask
+                    rMaskPacked,                -- 058 red bit mask
+                    gMaskPacked,                -- 062 green bit mask
+                    bMaskPacked,                -- 066 blue bit mask
+                    aMaskPacked,                -- 070 alpha bit mask
 
                     srgbPacked,
                     ciexyzPacked,
@@ -819,19 +851,19 @@ dlg:button {
 
                 header = tconcat({
                     strpack("<I4", dataLen),    -- 06
-                    zeroi4,                    -- 10
+                    zeroi4,                     -- 10
                     strpack("<I4", dataOffset), -- 14
                     strpack("<I4", dibLen),     -- 18
-                    wSpritePacked,             -- 22
-                    hSpritePacked,             -- 26
-                    planesPacked,              -- 30 bit planes
-                    bppPacked,                 -- 32 bits per pixel
-                    compressPacked,            -- 34 compression
-                    zeroi4,                    -- 38 size of compressed image
-                    zeroi4,                    -- 42 x res
-                    zeroi4,                    -- 46 y res
-                    zeroi4,                    -- 50 colors used
-                    zeroi4,                    -- 54 important colors
+                    wSpritePacked,              -- 22
+                    hSpritePacked,              -- 26
+                    planesPacked,               -- 30 bit planes
+                    bppPacked,                  -- 32 bits per pixel
+                    compressPacked,             -- 34 compression
+                    zeroi4,                     -- 38 size of compressed image
+                    zeroi4,                     -- 42 x res
+                    zeroi4,                     -- 46 y res
+                    zeroi4,                     -- 50 colors used
+                    zeroi4,                     -- 54 important colors
                 })
             end
 
