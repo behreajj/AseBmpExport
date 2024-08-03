@@ -461,8 +461,10 @@ dlg:button {
                 elseif fmtIsIdx1 then
                     local h = 0
                     while h < areaSprite do
-                        local v8 <const> = strbyte(flatBytes, 1 + h * 2)
-                        idcs[1 + h] = v8 >= 128 and 1 or 0
+                        local h2 <const> = h * 2
+                        local v8 <const>,
+                        a8 <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
+                        idcs[1 + h] = (a8 >= 128 and v8 >= 128) and 1 or 0
                         h = h + 1
                     end
                 else
