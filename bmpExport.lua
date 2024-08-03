@@ -343,21 +343,21 @@ dlg:button {
 
         -- Cached constants used in while loops.
         local zeroi1 <const> = strchar(0)
-        local zeroi4 <const> = strpack("I4", 0)
+        local zeroi4 <const> = strpack("<I4", 0)
         local from8to5 <const> = 31.0 / 255.0
         local from8to6 <const> = 63.0 / 255.0
 
         local filePrefix <const> = fileSys.filePathAndTitle(exportFilepath)
 
-        local wSpritePacked <const> = strpack("i4", wSprite)
-        local hSpritePacked <const> = strpack("i4", hSprite)
-        local planesPacked <const> = strpack("I2", 1)
-        local bppPacked <const> = strpack("I2", bpp)
-        local compressPacked <const> = strpack("I4", compression)
-        local rMaskPacked <const> = strpack("I4", rMask)
-        local gMaskPacked <const> = strpack("I4", gMask)
-        local bMaskPacked <const> = strpack("I4", bMask)
-        local aMaskPacked <const> = strpack("I4", aMask)
+        local wSpritePacked <const> = strpack("<i4", wSprite)
+        local hSpritePacked <const> = strpack("<i4", hSprite)
+        local planesPacked <const> = strpack("<I2", 1)
+        local bppPacked <const> = strpack("<I2", bpp)
+        local compressPacked <const> = strpack("<I4", compression)
+        local rMaskPacked <const> = strpack("<I4", rMask)
+        local gMaskPacked <const> = strpack("<I4", gMask)
+        local bMaskPacked <const> = strpack("<I4", bMask)
+        local aMaskPacked <const> = strpack("<I4", aMask)
         local srgbPacked <const> = strpack(
             "c1 c1 c1 c1",
             'B', 'G', 'R', 's')
@@ -788,10 +788,10 @@ dlg:button {
                 -- https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header
 
                 header = tconcat({
-                    strpack("I4", dataLen),    -- 006
+                    strpack("<I4", dataLen),    -- 006
                     zeroi4,                    -- 010
-                    strpack("I4", dataOffset), -- 014
-                    strpack("I4", dibLen),     -- 018
+                    strpack("<I4", dataOffset), -- 014
+                    strpack("<I4", dibLen),     -- 018
                     wSpritePacked,             -- 022
                     hSpritePacked,             -- 026
                     planesPacked,              -- 030 bit planes
@@ -818,10 +818,10 @@ dlg:button {
                 -- https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
 
                 header = tconcat({
-                    strpack("I4", dataLen),    -- 06
+                    strpack("<I4", dataLen),    -- 06
                     zeroi4,                    -- 10
-                    strpack("I4", dataOffset), -- 14
-                    strpack("I4", dibLen),     -- 18
+                    strpack("<I4", dataOffset), -- 14
+                    strpack("<I4", dibLen),     -- 18
                     wSpritePacked,             -- 22
                     hSpritePacked,             -- 26
                     planesPacked,              -- 30 bit planes
