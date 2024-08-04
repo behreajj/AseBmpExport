@@ -10,14 +10,20 @@ local formatOptions <const> = {
     "RGBA32", -- RGBA8888
 }
 
-local targetOptions <const> = {
+local frameOptions <const> = {
     "ACTIVE",
     "ALL",
     "TAG",
 }
 
+local layerOptions <const> = {
+    "ACTIVE",
+    "CANVAS",
+}
+
 local defaults <const> = {
-    targetOption = "ACTIVE",
+    layerOption = "CANVAS",
+    frameOption = "ACTIVE",
     formatOption = "RGB24",
     upscale = 1,
     applyRatio = false,
@@ -81,10 +87,20 @@ end
 local dlg <const> = Dialog { title = "Export BMP" }
 
 dlg:combobox {
-    id = "targetOption",
-    label = "Target:",
-    option = defaults.targetOption,
-    options = targetOptions,
+    id = "layerOption",
+    label = "Layers:",
+    option = defaults.layerOption,
+    options = layerOptions,
+    focus = false,
+}
+
+dlg:newrow { always = false }
+
+dlg:combobox {
+    id = "frameOption",
+    label = "Frames:",
+    option = defaults.frameOption,
+    options = frameOptions,
     focus = false,
 }
 
@@ -142,8 +158,10 @@ dlg:button {
         end
 
         local args <const> = dlg.data
-        local targetOption <const> = args.targetOption
-            or defaults.targetOption --[[@as string]]
+        local layerOption <const> = args.layerOption
+            or defaults.layerOption --[[@as string]]
+        local frameOption <const> = args.frameOption
+            or defaults.frameOption --[[@as string]]
         local formatOption <const> = args.formatOption
             or defaults.formatOption --[[@as string]]
         local upscale <const> = args.upscale
@@ -161,6 +179,25 @@ dlg:button {
         if string.lower(fileExt) ~= "bmp" then
             app.alert { title = "Error", text = "Extension must be bmp." }
             return
+        end
+
+        local activeLayer <const> = app.layer or activeSprite.layers[1]
+        local useFlatten <const> = layerOption == "CANVAS"
+        if layerOption == "ACTIVE" then
+            if activeLayer.isReference then
+                app.alert { title = "Error", text = "Reference layers not supported." }
+                return
+            end
+
+            if activeLayer.isGroup then
+                app.alert { title = "Error", text = "Group layers not supported." }
+                return
+            end
+
+            if activeLayer.isTilemap then
+                app.alert { title = "Error", text = "Tile map layers not supported." }
+                return
+            end
         end
 
         -- Acquire tool to prevent errors.
@@ -265,17 +302,13 @@ dlg:button {
         local wScalar <const> = wPixel * upscale
         local hScalar <const> = hPixel * upscale
 
-        local wSprite <const> = spriteSpec.width * wScalar
-        local hSprite <const> = spriteSpec.height * hScalar
-        local areaSprite <const> = wSprite * hSprite
-
         ---@type integer[]
         local chosenFrIdcs <const> = {}
-        if targetOption == "ACTIVE" then
+        if frameOption == "ACTIVE" then
             local activeFrObj <const> = app.frame or activeSprite.frames[1]
             local activeFrIdx <const> = activeFrObj.frameNumber
             chosenFrIdcs[1] = activeFrIdx
-        elseif targetOption == "TAG" then
+        elseif frameOption == "TAG" then
             local activeTag <const> = app.tag
             if activeTag then
                 local spriteFrObjs <const> = activeSprite.frames
@@ -345,13 +378,13 @@ dlg:button {
         -- Cached constants used in while loops.
         local zeroi1 <const> = strchar(0)
         local zeroi4 <const> = strpack("<I4", 0)
-        local from8to5 <const> = 31.0 / 255.0
-        local from8to6 <const> = 63.0 / 255.0
+        local rgb8to5 <const> = 31.0 / 255.0
+        local rgb8to6 <const> = 63.0 / 255.0
+        local gray8to4 <const> = 15.0 / 255.0
+        local gray8to2 <const> = 3.0 / 255.0
 
         local filePrefix <const> = fileSys.filePathAndTitle(exportFilepath)
 
-        local wSpritePacked <const> = strpack("<i4", wSprite)
-        local hSpritePacked <const> = strpack("<i4", hSprite)
         local planesPacked <const> = strpack("<I2", 1)
         local bppPacked <const> = strpack("<I2", bpp)
         local compressPacked <const> = strpack("<I4", compression)
@@ -392,10 +425,25 @@ dlg:button {
                 and alphaIdx
                 or 0
 
-            local flatImage = Image(spriteSpec)
-            flatImage:drawSprite(activeSprite, frIdx)
+            local flatImage = nil
+            if useFlatten then
+                flatImage = Image(spriteSpec)
+                flatImage:drawSprite(activeSprite, frIdx)
+            else
+                local activeCel <const> = activeLayer:cel(frIdx)
+                if activeCel then
+                    flatImage = activeCel.image
+                else
+                    flatImage = Image(spriteSpec)
+                end
+            end
+
             flatImage = upscaleImageForExport(flatImage, wScalar, hScalar)
+
             local flatBytes <const> = flatImage.bytes
+            local wTarget <const> = flatImage.width
+            local hTarget <const> = flatImage.height
+            local areaTarget <const> = wTarget * hTarget
 
             ---@type integer[]
             local abgr32s <const> = {}
@@ -406,7 +454,7 @@ dlg:button {
                 if fmtIsIdx then
                     if fmtIsIdx1 then
                         local h = 0
-                        while h < areaSprite do
+                        while h < areaTarget do
                             local h4 <const> = h * 4
                             local r8 <const>,
                             g8 <const>,
@@ -423,7 +471,7 @@ dlg:button {
                         end
                     else
                         local h = 0
-                        while h < areaSprite do
+                        while h < areaTarget do
                             local h4 <const> = h * 4
                             local r8 <const>,
                             g8 <const>,
@@ -440,7 +488,7 @@ dlg:button {
                     end
                 else
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local h4 <const> = h * 4
                         local r8 <const>,
                         g8 <const>,
@@ -454,32 +502,28 @@ dlg:button {
             elseif cmIsGry then
                 if fmtIsIdx8 then
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local v8 <const> = strbyte(flatBytes, 1 + h * 2)
                         idcs[1 + h] = v8
                         h = h + 1
                     end
                 elseif fmtIsIdx4 then
-                    local convert <const> = 15.0 / 255.0
-
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local v8 <const> = strbyte(flatBytes, 1 + h * 2)
-                        idcs[1 + h] = floor(v8 * convert + 0.5)
+                        idcs[1 + h] = floor(v8 * gray8to4 + 0.5)
                         h = h + 1
                     end
                 elseif fmtIsIdx2 then
-                    local convert <const> = 3.0 / 255.0
-
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local v8 <const> = strbyte(flatBytes, 1 + h * 2)
-                        idcs[1 + h] = floor(v8 * convert + 0.5)
+                        idcs[1 + h] = floor(v8 * gray8to2 + 0.5)
                         h = h + 1
                     end
                 elseif fmtIsIdx1 then
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local h2 <const> = h * 2
                         local v8 <const>,
                         a8 <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
@@ -488,7 +532,7 @@ dlg:button {
                     end
                 else
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local h2 <const> = h * 2
                         local v8 <const>,
                         a8 <const> = strbyte(flatBytes, 1 + h2, 2 + h2)
@@ -500,7 +544,7 @@ dlg:button {
             elseif cmIsIdx then
                 if fmtIsIdx then
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local idx <const> = strbyte(flatBytes, 1 + h)
                         local idxVerif <const> = idx < lenPalClamped
                             and idx
@@ -510,7 +554,7 @@ dlg:button {
                     end
                 else
                     local h = 0
-                    while h < areaSprite do
+                    while h < areaTarget do
                         local idx <const> = strbyte(flatBytes, 1 + h)
                         local idxVerif <const> = idx < lenPalClamped
                             and idx
@@ -598,11 +642,11 @@ dlg:button {
 
             ---@type string[]
             local trgStrArr <const> = {}
-            local hn1 <const> = hSprite - 1
+            local hn1 <const> = hTarget - 1
 
             if fmtIsRgb32 or fmtIsRgba32 then
                 local j = 0
-                while j < areaSprite do
+                while j < areaTarget do
                     local abgr32 <const> = abgr32s[1 + j]
 
                     local a8 <const> = abgr32 >> 0x18 & 0xff
@@ -610,18 +654,18 @@ dlg:button {
                     local g8 <const> = abgr32 >> 0x08 & 0xff
                     local r8 <const> = abgr32 & 0xff
 
-                    local x <const> = j % wSprite
-                    local y <const> = j // wSprite
+                    local x <const> = j % wTarget
+                    local y <const> = j // wTarget
                     local yFlipped <const> = hn1 - y
-                    local n <const> = yFlipped * wSprite + x
+                    local n <const> = yFlipped * wTarget + x
 
                     trgStrArr[1 + n] = strpack("B B B B", b8, g8, r8, a8)
 
                     j = j + 1
                 end
             elseif fmtIsRgb24 then
-                local bytesPerRow <const> = 4 * ceil((wSprite * 24) / 32)
-                local hbpr <const> = hSprite * bytesPerRow
+                local bytesPerRow <const> = 4 * ceil((wTarget * 24) / 32)
+                local hbpr <const> = hTarget * bytesPerRow
 
                 local n = 0
                 while n < hbpr do
@@ -629,10 +673,10 @@ dlg:button {
                     local x <const> = xByte // 3
 
                     local value = 0
-                    if x < wSprite then
+                    if x < wTarget then
                         local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
-                        local j <const> = y * wSprite + x
+                        local j <const> = y * wTarget + x
                         local abgr32 <const> = abgr32s[1 + j]
 
                         local channel <const> = xByte % 3
@@ -650,8 +694,8 @@ dlg:button {
                     n = n + 1
                 end
             elseif fmtIsRgb16 then
-                local bytesPerRow <const> = 4 * ceil((wSprite * 16) / 32)
-                local hbpr <const> = hSprite * bytesPerRow
+                local bytesPerRow <const> = 4 * ceil((wTarget * 16) / 32)
+                local hbpr <const> = hTarget * bytesPerRow
 
                 local n = 0
                 while n < hbpr do
@@ -659,19 +703,19 @@ dlg:button {
                     local x <const> = xByte // 2
 
                     local value = 0
-                    if x < wSprite then
+                    if x < wTarget then
                         local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
-                        local j <const> = y * wSprite + x
+                        local j <const> = y * wTarget + x
                         local abgr32 <const> = abgr32s[1 + j]
 
                         local b8 <const> = abgr32 >> 0x10 & 0xff
                         local g8 <const> = abgr32 >> 0x08 & 0xff
                         local r8 <const> = abgr32 & 0xff
 
-                        local r5 <const> = floor(r8 * from8to5 + 0.5)
-                        local g6 <const> = floor(g8 * from8to6 + 0.5)
-                        local b5 <const> = floor(b8 * from8to5 + 0.5)
+                        local r5 <const> = floor(r8 * rgb8to5 + 0.5)
+                        local g6 <const> = floor(g8 * rgb8to6 + 0.5)
+                        local b5 <const> = floor(b8 * rgb8to5 + 0.5)
 
                         local rgb565 <const> = r5 << 0xb | g6 << 0x5 | b5
 
@@ -688,8 +732,8 @@ dlg:button {
                     n = n + 1
                 end
             elseif fmtIsRgb15 or fmtIsRgba16 then
-                local bytesPerRow <const> = 4 * ceil((wSprite * 16) / 32)
-                local hbpr <const> = hSprite * bytesPerRow
+                local bytesPerRow <const> = 4 * ceil((wTarget * 16) / 32)
+                local hbpr <const> = hTarget * bytesPerRow
 
                 local n = 0
                 while n < hbpr do
@@ -697,10 +741,10 @@ dlg:button {
                     local x <const> = xByte // 2
 
                     local value = 0
-                    if x < wSprite then
+                    if x < wTarget then
                         local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
-                        local j <const> = y * wSprite + x
+                        local j <const> = y * wTarget + x
                         local abgr32 <const> = abgr32s[1 + j]
 
                         local a8 <const> = abgr32 >> 0x18 & 0xff
@@ -709,9 +753,9 @@ dlg:button {
                         local r8 <const> = abgr32 & 0xff
 
                         local a1 <const> = a8 >= 128 and 1 or 0
-                        local r5 <const> = floor(r8 * from8to5 + 0.5)
-                        local g5 <const> = floor(g8 * from8to5 + 0.5)
-                        local b5 <const> = floor(b8 * from8to5 + 0.5)
+                        local r5 <const> = floor(r8 * rgb8to5 + 0.5)
+                        local g5 <const> = floor(g8 * rgb8to5 + 0.5)
+                        local b5 <const> = floor(b8 * rgb8to5 + 0.5)
 
                         local rgb555 <const> = a1 << 0xf | r5 << 0xa | g5 << 0x5 | b5
 
@@ -728,18 +772,18 @@ dlg:button {
                     n = n + 1
                 end
             elseif fmtIsIdx8 then
-                local bytesPerRow <const> = 4 * ceil((wSprite * 8) / 32)
-                local hbpr <const> = hSprite * bytesPerRow
+                local bytesPerRow <const> = 4 * ceil((wTarget * 8) / 32)
+                local hbpr <const> = hTarget * bytesPerRow
 
                 local n = 0
                 while n < hbpr do
                     local x <const> = n % bytesPerRow
 
                     local idxVerif = 0
-                    if x < wSprite then
+                    if x < wTarget then
                         local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
-                        local j <const> = y * wSprite + x
+                        local j <const> = y * wTarget + x
                         local idx <const> = idcs[1 + j]
                         idxVerif = idx < lenPalClamped
                             and idx
@@ -753,23 +797,23 @@ dlg:button {
             elseif fmtIsIdx4 then
                 -- TODO: Any way this can be a more efficient 1D loop?
 
-                local bytesPerRow <const> = 4 * ceil((wSprite * 4) / 32)
+                local bytesPerRow <const> = 4 * ceil((wTarget * 4) / 32)
 
-                local y = hSprite - 1
+                local y = hTarget - 1
                 while y >= 0 do
                     ---@type string[]
                     local rowStr <const> = {}
 
                     local x = 0
-                    while x < wSprite do
-                        local i0 <const> = y * wSprite + x
+                    while x < wTarget do
+                        local i0 <const> = y * wTarget + x
                         local idx0 <const> = idcs[1 + i0]
                         local idxVerif0 <const> = idx0 < lenPalClamped
                             and idx0
                             or alphaIdxVerif
 
-                        local i1 <const> = y * wSprite + x + 1
-                        local idx1 <const> = (x + 1) < wSprite
+                        local i1 <const> = y * wTarget + x + 1
+                        local idx1 <const> = (x + 1) < wTarget
                             and idcs[1 + i1]
                             or 0
                         local idxVerif1 <const> = idx1 < lenPalClamped
@@ -800,15 +844,15 @@ dlg:button {
             elseif fmtIsIdx1 then
                 ---@type integer[]
                 local dWords <const> = {}
-                local dWordsPerRow <const> = ceil(wSprite / 32)
+                local dWordsPerRow <const> = ceil(wTarget / 32)
 
                 local j = 0
-                while j < areaSprite do
-                    local x <const> = j % wSprite
-                    local y <const> = j // wSprite
+                while j < areaTarget do
+                    local x <const> = j % wTarget
+                    local y <const> = j // wTarget
 
-                    local yFlipped <const> = hSprite - 1 - y
-                    local n <const> = yFlipped * wSprite + x
+                    local yFlipped <const> = hTarget - 1 - y
+                    local n <const> = yFlipped * wTarget + x
 
                     local idx = idcs[1 + n]
                     local idxVerif <const> = idx < lenPalClamped
@@ -845,8 +889,8 @@ dlg:button {
                     zeroi4,                     -- 010
                     strpack("<I4", dataOffset), -- 014
                     strpack("<I4", dibLen),     -- 018
-                    wSpritePacked,              -- 022
-                    hSpritePacked,              -- 026
+                    strpack("<i4", wTarget),    -- 022 signed width
+                    strpack("<i4", hTarget),    -- 026 signed height
                     planesPacked,               -- 030 bit planes
                     bppPacked,                  -- 032 bits per pixel
                     compressPacked,             -- 034 compression
@@ -875,8 +919,8 @@ dlg:button {
                     zeroi4,                     -- 10
                     strpack("<I4", dataOffset), -- 14
                     strpack("<I4", dibLen),     -- 18
-                    wSpritePacked,              -- 22
-                    hSpritePacked,              -- 26
+                    strpack("<i4", wTarget),    -- 22 signed width
+                    strpack("<i4", hTarget),    -- 26 signed height
                     planesPacked,               -- 30 bit planes
                     bppPacked,                  -- 32 bits per pixel
                     compressPacked,             -- 34 compression
