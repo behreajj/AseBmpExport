@@ -672,7 +672,7 @@ dlg:button {
                     local xByte <const> = n % bytesPerRow
                     local x <const> = xByte // 3
 
-                    local value = 0
+                    local c8 = 0
                     if x < wTarget then
                         local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
@@ -681,15 +681,15 @@ dlg:button {
 
                         local channel <const> = xByte % 3
                         if channel == 2 then
-                            value = abgr32 & 0xff
+                            c8 = abgr32 & 0xff
                         elseif channel == 1 then
-                            value = (abgr32 >> 0x08) & 0xff
+                            c8 = (abgr32 >> 0x08) & 0xff
                         else
-                            value = (abgr32 >> 0x10) & 0xff
+                            c8 = (abgr32 >> 0x10) & 0xff
                         end
                     end
 
-                    trgStrArr[1 + n] = strchar(value)
+                    trgStrArr[1 + n] = strchar(c8)
 
                     n = n + 1
                 end
@@ -702,7 +702,7 @@ dlg:button {
                     local xByte <const> = n % bytesPerRow
                     local x <const> = xByte // 2
 
-                    local value = 0
+                    local c8 = 0
                     if x < wTarget then
                         local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
@@ -721,13 +721,13 @@ dlg:button {
 
                         local channel <const> = xByte % 2
                         if channel == 1 then
-                            value = (rgb565 >> 0x08) & 0xff
+                            c8 = (rgb565 >> 0x08) & 0xff
                         else
-                            value = rgb565 & 0xff
+                            c8 = rgb565 & 0xff
                         end
                     end
 
-                    trgStrArr[1 + n] = strchar(value)
+                    trgStrArr[1 + n] = strchar(c8)
 
                     n = n + 1
                 end
@@ -740,7 +740,7 @@ dlg:button {
                     local xByte <const> = n % bytesPerRow
                     local x <const> = xByte // 2
 
-                    local value = 0
+                    local c8 = 0
                     if x < wTarget then
                         local yFlipped <const> = n // bytesPerRow
                         local y <const> = hn1 - yFlipped
@@ -761,13 +761,13 @@ dlg:button {
 
                         local channel <const> = xByte % 2
                         if channel == 1 then
-                            value = (rgb555 >> 0x08) & 0xff
+                            c8 = (rgb555 >> 0x08) & 0xff
                         else
-                            value = rgb555 & 0xff
+                            c8 = rgb555 & 0xff
                         end
                     end
 
-                    trgStrArr[1 + n] = strchar(value)
+                    trgStrArr[1 + n] = strchar(c8)
 
                     n = n + 1
                 end
