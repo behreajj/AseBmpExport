@@ -181,6 +181,10 @@ dlg:button {
             return
         end
 
+        -- Whether or not a background layer is present changes whether a
+        -- color index in the image map that is equal to the alpha index is
+        -- treated as clear black or as the opaque color.
+        local hasBkg = false
         local activeLayer <const> = app.layer or activeSprite.layers[1]
         local useFlatten <const> = layerOption == "CANVAS"
         if layerOption == "ACTIVE" then
@@ -198,6 +202,11 @@ dlg:button {
                 app.alert { title = "Error", text = "Tile map layers not supported." }
                 return
             end
+
+            hasBkg = activeLayer.isBackground
+        else
+            hasBkg = activeSprite.backgroundLayer ~= nil
+                and activeSprite.backgroundLayer.isVisible
         end
 
         -- Acquire tool to prevent errors.
@@ -287,11 +296,6 @@ dlg:button {
         local cmIsRgb <const> = colorMode == ColorMode.RGB
         local cmIsGry <const> = colorMode == ColorMode.GRAY
         local cmIsIdx <const> = colorMode == ColorMode.INDEXED
-
-        -- Whether or not a background layer is present changes whether a
-        -- color index in the image map that is equal to the alpha index is
-        -- treated as clear black or as the opaque color.
-        local hasBkg <const> = activeSprite.backgroundLayer ~= nil
 
         -- Find pixel aspect ratio in case image needs to be scaled.
         local pxRatio <const> = activeSprite.pixelRatio
@@ -392,9 +396,13 @@ dlg:button {
         local gMaskPacked <const> = strpack("<I4", gMask)
         local bMaskPacked <const> = strpack("<I4", bMask)
         local aMaskPacked <const> = strpack("<I4", aMask)
+        -- This can be either "Win ", "sRGB" or 0. Seems like importers ignore
+        -- these colorspace settings anyway...
         local srgbPacked <const> = strpack(
             "c1 c1 c1 c1",
             'B', 'G', 'R', 's')
+        -- For float to fixed point conversion, see:
+        -- https://stackoverflow.com/questions/75516844/c-floating-point-to-fixed-point-conversion
         local ciexyzPacked <const> = strpack(
             "f f f f f f f f f",
             0, 0, 0, 0, 0, 0, 0, 0, 0)
