@@ -7,7 +7,6 @@ local formatOptions <const> = {
     "RGB16",  -- RGB565
     "RGB24",  -- RGB888
     "RGB32",  -- RGB_8880
-    "RGBA12", -- RGBA3333
     "RGBA16", -- RGBA5551
     "RGBA32", -- RGBA8888
 }
@@ -24,8 +23,7 @@ local layerOptions <const> = {
 }
 
 local defaults <const> = {
-    -- RGBA4444 is possible, but it doesn't seem popular enough to
-    -- merit implementing?
+    -- TODO: Support RGB444 as "RGB12"?
     layerOption = "CANVAS",
     frameOption = "ACTIVE",
     formatOption = "RGB24",
@@ -640,14 +638,10 @@ dlg:button {
                     local i = 0
                     while i < lenPalClamped do
                         local aseColor <const> = palette:getColor(i)
-                        local r8 <const> = aseColor.red
-                        local g8 <const> = aseColor.green
-                        local b8 <const> = aseColor.blue
-
                         local i4 <const> = i * 4
-                        palStrArr[1 + i4] = strchar(b8)
-                        palStrArr[2 + i4] = strchar(g8)
-                        palStrArr[3 + i4] = strchar(r8)
+                        palStrArr[1 + i4] = strchar(aseColor.blue)
+                        palStrArr[2 + i4] = strchar(aseColor.green)
+                        palStrArr[3 + i4] = strchar(aseColor.red)
                         palStrArr[4 + i4] = zeroi1
 
                         i = i + 1
@@ -745,13 +739,9 @@ dlg:button {
                         local b5 <const> = floor(b8 * from8to5 + 0.5)
 
                         local rgb565 <const> = r5 << 0xb | g6 << 0x5 | b5
-
-                        local channel <const> = xByte % 2
-                        if channel == 1 then
-                            c8 = (rgb565 >> 0x08) & 0xff
-                        else
-                            c8 = rgb565 & 0xff
-                        end
+                        c8 = (xByte % 2 == 1)
+                            and ((rgb565 >> 0x08) & 0xff)
+                            or (rgb565 & 0xff)
                     end
 
                     trgStrArr[1 + n] = strchar(c8)
@@ -785,13 +775,9 @@ dlg:button {
                         local b5 <const> = floor(b8 * from8to5 + 0.5)
 
                         local argb1555 <const> = a1 << 0xf | r5 << 0xa | g5 << 0x5 | b5
-
-                        local channel <const> = xByte % 2
-                        if channel == 1 then
-                            c8 = (argb1555 >> 0x08) & 0xff
-                        else
-                            c8 = argb1555 & 0xff
-                        end
+                        c8 = (xByte % 2 == 1)
+                            and ((argb1555 >> 0x08) & 0xff)
+                            or (argb1555 & 0xff)
                     end
 
                     trgStrArr[1 + n] = strchar(c8)
@@ -825,13 +811,9 @@ dlg:button {
                         local b3 <const> = floor(b8 * from8to3 + 0.5)
 
                         local argb3333 <const> = a3 << 0x9 | r3 << 0x6 | g3 << 0x3 | b3
-
-                        local channel <const> = xByte % 2
-                        if channel == 1 then
-                            c8 = (argb3333 >> 0x08) & 0xff
-                        else
-                            c8 = argb3333 & 0xff
-                        end
+                        c8 = (xByte % 2 == 1)
+                            and ((argb3333 >> 0x08) & 0xff)
+                            or (argb3333 & 0xff)
                     end
 
                     trgStrArr[1 + n] = strchar(c8)

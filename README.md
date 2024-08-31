@@ -4,11 +4,13 @@
 
 This an [Aseprite](https://www.aseprite.org/) script to export `bmp`s in a variety of formats. Aseprite supports `bmp` export natively, but does not give the user direct control over the data format. This leads to problems where other graphics editors have issues opening Aseprite generated files.
 
-This script uses the [BITMAPINFOHEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader) for indexed 1, 4 and 8 formats and RGB 15, 24 and 32 formats. It uses the [BITMAPV4HEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header) for RGB 16 (565), RGBA 16 (5551) and RGBA 32 formats. Exported files do not use any compression. Color profile information is not written to the file, even when the `BITMAPV4HEADER` is used, as the data cannot be accessed by Aseprite's Lua scripting API. For that reason, the sRGB color space should be assumed.
+This script uses the [BITMAPINFOHEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader) for indexed 1, 4 and 8 formats and RGB 15, 24 and 32 formats. It uses the [BITMAPV4HEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header) for RGB 9 (333), RGB 16 (565), RGBA 16 (5551) and RGBA 32 formats. Formats that fit within the 256 color limit of an 8 bit indexed format, such as RGB 8 (332), are not supported.
+
+Exported files do not use any compression. Color profile information is not written to the file, even when the `BITMAPV4HEADER` is used, as the data cannot be accessed by Aseprite's Lua scripting API. For that reason, the sRGB color space should be assumed.
 
 Sample export files can be found in the samples folder if you'd like to test compatibility before using the script.
 
-*This script was developed and tested in Aseprite version 1.3.7 on Windows 10.*
+*This script was developed and tested in Aseprite version 1.3.8.1 on Windows 10.*
 
 ## Download
 
@@ -39,13 +41,12 @@ Below are known compatibility issues with exported `bmp`s and other software.
 |Krita|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
 |MS Paint|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
 |Paint.Net|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
-|Unity|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
 |Visual Studio|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
 |XnView MP|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
 
-The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 15 and 32 bit RGB.
+<!-- TODO: Use Blender as a test instead of Unity. -->
 
-In Unity, transparency must be turned on in texture import settings. The results above assume it is on.
+The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 15 and 32 bit RGB.
 
 ## Modification
 
