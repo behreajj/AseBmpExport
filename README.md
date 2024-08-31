@@ -4,7 +4,7 @@
 
 This an [Aseprite](https://www.aseprite.org/) script to export `bmp`s in a variety of formats. Aseprite supports `bmp` export natively, but does not give the user direct control over the data format. This leads to problems where other graphics editors have issues opening Aseprite generated files.
 
-This script uses the [BITMAPINFOHEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader) for indexed 1, 4 and 8 formats and RGB 15, 24 and 32 formats. It uses the [BITMAPV4HEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header) for RGB 9 (333), RGB 16 (565), RGBA 16 (5551) and RGBA 32 formats. Formats that fit within the 256 color limit of an 8 bit indexed format, such as RGB 8 (332), are not supported.
+This script uses the [BITMAPINFOHEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader) for indexed 1, 4 and 8 formats and RGB 15, 24 and 32 formats. It uses the [BITMAPV4HEADER](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapv4header) for RGB 9, RGB 16 (565), RGBA 16 (5551) and RGBA 32 formats. Formats that fit within the 256 color limit of an 8 bit indexed format, such as RGB 8 (332), are not supported.
 
 Exported files do not use any compression. Color profile information is not written to the file, even when the `BITMAPV4HEADER` is used, as the data cannot be accessed by Aseprite's Lua scripting API. For that reason, the sRGB color space should be assumed.
 
@@ -32,21 +32,22 @@ Once open, holding down the `Alt` or `Option` key and pressing the underlined le
 
 Below are known compatibility issues with exported `bmp`s and other software.
 
-|Software|IDX1|IDX4|IDX8|RGB15|RGB16|RGB24|RGB32|RGBA16|RGBA32|
-|-------:|:--:|:--:|:--:|:---:|:---:|:---:|:---:|:----:|:----:|
-|Aseprite|✔️|✔️|✔️|❕|✔️|✔️|❕|✔️|✔️|
-|GIMP|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|
-|Godot|❌|❌|✔️|❕|✔️|✔️|❕|✔️|✔️|
-|Irfanview|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|
-|Krita|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
-|MS Paint|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
-|Paint.Net|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
-|Visual Studio|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
-|XnView MP|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
+|Software|IDX1|IDX4|IDX8|RGB9|RGB15|RGB16|RGB24|RGB32|RGBA16|RGBA32|
+|-------:|:--:|:--:|:--:|:--:|:---:|:---:|:---:|:---:|:----:|:----:|
+|Aseprite|✔️|✔️|✔️|✔️|❕|✔️|✔️|❕|✔️|✔️|
+|Blender|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
+|GIMP|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|
+|Godot|❌|❌|✔️|✔️|❕|✔️|✔️|❕|✔️|✔️|
+|Irfanview|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|
+|Krita|✔️|✔️|✔️|❕|✔️|✔️|✔️|✔️|❕|✔️|
+|MS Paint|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|Paint.Net|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|Visual Studio|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|XnView MP|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
 
-<!-- TODO: Use Blender as a test instead of Unity. -->
+The exclamation points indicate that a file will load, but there will be an issue. In most cases, the alpha channel (transparency) is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 9, 15 and 32 bit RGB. In other cases, there may be differences with how lower bit depth channels are expanded to higher depths. For example, RGB 9 `0x7` may be expanded to RGB 24 as `0xff` in one editor; as `0xfc` in another.
 
-The exclamation points indicate that a file will load, but there will be a transparency issue. In most cases, the alpha channel is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 15 and 32 bit RGB.
+At time of writing, Godot restricts the width and height of indexed `bmp` images to certain multiples, hence the red x's.
 
 ## Modification
 
