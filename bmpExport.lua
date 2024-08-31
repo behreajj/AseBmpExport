@@ -2,10 +2,12 @@ local formatOptions <const> = {
     "IDX1",
     "IDX4",
     "IDX8",
+    "RGB9",   -- RGB_3330
     "RGB15",  -- RGB_5550
     "RGB16",  -- RGB565
     "RGB24",  -- RGB888
     "RGB32",  -- RGB_8880
+    "RGBA12", -- RGBA3333
     "RGBA16", -- RGBA5551
     "RGBA32", -- RGBA8888
 }
@@ -22,6 +24,8 @@ local layerOptions <const> = {
 }
 
 local defaults <const> = {
+    -- RGBA4444 is possible, but it doesn't seem popular enough to
+    -- merit implementing?
     layerOption = "CANVAS",
     frameOption = "ACTIVE",
     formatOption = "RGB24",
@@ -229,24 +233,30 @@ dlg:button {
             or fmtIsIdx4
             or fmtIsIdx8
 
+        local fmtIsRgb9 <const> = formatOption == "RGB9"
         local fmtIsRgb15 <const> = formatOption == "RGB15"
         local fmtIsRgb16 <const> = formatOption == "RGB16"
         local fmtIsRgb24 <const> = formatOption == "RGB24"
         local fmtIsRgb32 <const> = formatOption == "RGB32"
+        local fmtIsRgba12 <const> = formatOption == "RGBA12"
         local fmtIsRgba16 <const> = formatOption == "RGBA16"
         local fmtIsRgba32 <const> = formatOption == "RGBA32"
 
         local writeV4Header <const> = fmtIsRgba32
             or fmtIsRgba16
             or fmtIsRgb16
+            or fmtIsRgba12
+            or fmtIsRgb9
 
         local bpp = 32
         if fmtIsRgb32 or fmtIsRgba32 then
             bpp = 32
         elseif fmtIsRgb24 then
             bpp = 24
-        elseif fmtIsRgb15
+        elseif fmtIsRgb9
+            or fmtIsRgb15
             or fmtIsRgb16
+            or fmtIsRgba12
             or fmtIsRgba16 then
             bpp = 16
         elseif fmtIsIdx8 then
@@ -274,14 +284,22 @@ dlg:button {
         local gMask = 0x0000ff00
         local bMask = 0x000000ff
         local aMask = 0xff000000
-        if fmtIsRgb16 then
+        if fmtIsRgb9 then
+            rMask = 0x01c0 -- 0x7 << 0x6
+            gMask = 0x0038 -- 0x7 << 0x3
+            bMask = 0x0007 -- 0x7 << 0x0
+            aMask = 0x0000
+        elseif fmtIsRgba12 then
+            rMask = 0x01c0 -- 0x7 << 0x6
+            gMask = 0x0038 -- 0x7 << 0x3
+            bMask = 0x0007 -- 0x7 << 0x0
+            aMask = 0x0e00 -- 0x7 << 0x9
+        elseif fmtIsRgb16 then
             rMask = 0xf800 -- 0x1f << 0xb
             gMask = 0x07e0 -- 0x3f << 0x5
             bMask = 0x001f -- 0x1f << 0x0
             aMask = 0x0000
         elseif fmtIsRgba16 then
-            -- Krita opens both this RGBA16 and Gimp RGBA16 as translucent.
-
             rMask = 0x7c00 -- 0x1f << 0xa
             gMask = 0x03e0 -- 0x1f << 0x5
             bMask = 0x001f -- 0x1f << 0x0
@@ -382,10 +400,11 @@ dlg:button {
         -- Cached constants used in while loops.
         local zeroi1 <const> = strchar(0)
         local zeroi4 <const> = strpack("<I4", 0)
-        local rgb8to5 <const> = 31.0 / 255.0
-        local rgb8to6 <const> = 63.0 / 255.0
-        local gray8to4 <const> = 15.0 / 255.0
-        local gray8to2 <const> = 3.0 / 255.0
+        local from8to2 <const> = 3.0 / 255.0
+        local from8to3 <const> = 7.0 / 255.0
+        local from8to4 <const> = 15.0 / 255.0
+        local from8to5 <const> = 31.0 / 255.0
+        local from8to6 <const> = 63.0 / 255.0
 
         local filePrefix <const> = fileSys.filePathAndTitle(exportFilepath)
 
@@ -519,14 +538,14 @@ dlg:button {
                     local h = 0
                     while h < areaTarget do
                         local v8 <const> = strbyte(flatBytes, 1 + h * 2)
-                        idcs[1 + h] = floor(v8 * gray8to4 + 0.5)
+                        idcs[1 + h] = floor(v8 * from8to4 + 0.5)
                         h = h + 1
                     end
                 elseif fmtIsIdx2 then
                     local h = 0
                     while h < areaTarget do
                         local v8 <const> = strbyte(flatBytes, 1 + h * 2)
-                        idcs[1 + h] = floor(v8 * gray8to2 + 0.5)
+                        idcs[1 + h] = floor(v8 * from8to2 + 0.5)
                         h = h + 1
                     end
                 elseif fmtIsIdx1 then
@@ -721,9 +740,9 @@ dlg:button {
                         local g8 <const> = abgr32 >> 0x08 & 0xff
                         local r8 <const> = abgr32 & 0xff
 
-                        local r5 <const> = floor(r8 * rgb8to5 + 0.5)
-                        local g6 <const> = floor(g8 * rgb8to6 + 0.5)
-                        local b5 <const> = floor(b8 * rgb8to5 + 0.5)
+                        local r5 <const> = floor(r8 * from8to5 + 0.5)
+                        local g6 <const> = floor(g8 * from8to6 + 0.5)
+                        local b5 <const> = floor(b8 * from8to5 + 0.5)
 
                         local rgb565 <const> = r5 << 0xb | g6 << 0x5 | b5
 
@@ -761,17 +780,57 @@ dlg:button {
                         local r8 <const> = abgr32 & 0xff
 
                         local a1 <const> = a8 >= 128 and 1 or 0
-                        local r5 <const> = floor(r8 * rgb8to5 + 0.5)
-                        local g5 <const> = floor(g8 * rgb8to5 + 0.5)
-                        local b5 <const> = floor(b8 * rgb8to5 + 0.5)
+                        local r5 <const> = floor(r8 * from8to5 + 0.5)
+                        local g5 <const> = floor(g8 * from8to5 + 0.5)
+                        local b5 <const> = floor(b8 * from8to5 + 0.5)
 
-                        local rgb555 <const> = a1 << 0xf | r5 << 0xa | g5 << 0x5 | b5
+                        local argb1555 <const> = a1 << 0xf | r5 << 0xa | g5 << 0x5 | b5
 
                         local channel <const> = xByte % 2
                         if channel == 1 then
-                            c8 = (rgb555 >> 0x08) & 0xff
+                            c8 = (argb1555 >> 0x08) & 0xff
                         else
-                            c8 = rgb555 & 0xff
+                            c8 = argb1555 & 0xff
+                        end
+                    end
+
+                    trgStrArr[1 + n] = strchar(c8)
+
+                    n = n + 1
+                end
+            elseif fmtIsRgb9 or fmtIsRgba12 then
+                local bytesPerRow <const> = 4 * ceil((wTarget * 16) / 32)
+                local hbpr <const> = hTarget * bytesPerRow
+
+                local n = 0
+                while n < hbpr do
+                    local xByte <const> = n % bytesPerRow
+                    local x <const> = xByte // 2
+
+                    local c8 = 0
+                    if x < wTarget then
+                        local yFlipped <const> = n // bytesPerRow
+                        local y <const> = hn1 - yFlipped
+                        local j <const> = y * wTarget + x
+                        local abgr32 <const> = abgr32s[1 + j]
+
+                        local a8 <const> = abgr32 >> 0x18 & 0xff
+                        local b8 <const> = abgr32 >> 0x10 & 0xff
+                        local g8 <const> = abgr32 >> 0x08 & 0xff
+                        local r8 <const> = abgr32 & 0xff
+
+                        local a3 <const> = floor(a8 * from8to3 + 0.5)
+                        local r3 <const> = floor(r8 * from8to3 + 0.5)
+                        local g3 <const> = floor(g8 * from8to3 + 0.5)
+                        local b3 <const> = floor(b8 * from8to3 + 0.5)
+
+                        local argb3333 <const> = a3 << 0x9 | r3 << 0x6 | g3 << 0x3 | b3
+
+                        local channel <const> = xByte % 2
+                        if channel == 1 then
+                            c8 = (argb3333 >> 0x08) & 0xff
+                        else
+                            c8 = argb3333 & 0xff
                         end
                     end
 
