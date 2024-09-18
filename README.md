@@ -42,12 +42,13 @@ Below are known compatibility issues with exported `bmp`s and other software.
 |Krita|✔️|✔️|✔️|❕|✔️|✔️|✔️|✔️|❕|✔️|
 |MS Paint|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
 |Paint.Net|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
+|Photopea|✔️|✔️|✔️|❌|✔️|❌|✔️|❕|❕|✔️|
 |Visual Studio|✔️|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|✔️|
 |XnView MP|✔️|✔️|✔️|✔️|✔️|✔️|✔️|❕|❕|✔️|
 
 The exclamation points indicate that a file will load, but there will be an issue. In most cases, the alpha channel (transparency) is ignored. In some cases, the alpha channel is recognized in the file data, even if it's not specified by the header. The latter case is because this script writes the alpha to the file data for 9, 15 and 32 bit RGB. In other cases, there may be differences with how lower bit depth channels are expanded to higher depths. For example, RGB 9 `0x7` may be expanded to RGB 24 as `0xff` in one editor; as `0xfc` in another.
 
-At time of writing, Godot restricts the width and height of indexed `bmp` images to certain multiples, hence the red x's.
+At time of writing, Godot restricts the width and height of indexed `bmp` images to certain multiples, hence the red x's. Photopea will open all formats, but colors will be incorrect for some.
 
 ## Modification
 

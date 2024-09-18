@@ -247,6 +247,7 @@ dlg:button {
             or fmtIsRgb9
 
         local bpp = 32
+        local bppIs16 = false
         if fmtIsRgb32 or fmtIsRgba32 then
             bpp = 32
         elseif fmtIsRgb24 then
@@ -257,6 +258,7 @@ dlg:button {
             or fmtIsRgba12
             or fmtIsRgba16 then
             bpp = 16
+            bppIs16 = true
         elseif fmtIsIdx8 then
             bpp = 8
         elseif fmtIsIdx4 then
@@ -715,6 +717,7 @@ dlg:button {
                     n = n + 1
                 end
             elseif fmtIsRgb16 then
+                -- TODO: Condense all these separate 16 bpp blocks.
                 local bytesPerRow <const> = 4 * ceil((wTarget * 16) / 32)
                 local hbpr <const> = hTarget * bytesPerRow
 
